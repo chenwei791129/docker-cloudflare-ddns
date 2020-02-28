@@ -6,7 +6,7 @@ ENV CLOUDFLARE_TOKEN="" \
     CLOUDFLARE_PROXIED=false \
     TTL=1 \
     CHECK_URL="http://whatismyip.akamai.com/" \
-    CRON_TIME="*/1 * * * *"
+    CRON_TIME="*/5 * * * *"
 
 WORKDIR /scripts
 
