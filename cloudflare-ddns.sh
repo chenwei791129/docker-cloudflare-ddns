@@ -3,7 +3,13 @@
 DATETIME=$(date +"%Y-%m-%d %H:%M:%S %z")
 
 LASEST_IP=$(curl --silent -s ${CHECK_URL})
-echo "[${DATETIME}] Checking current Public IP from ${CHECK_URL}..."
+echo "[${DATETIME}] Checking current public IP from ${CHECK_URL}..."
+if [[ ${LASEST_IP} =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "[${DATETIME}] public ip: ${LASEST_IP}"
+else
+    echo "[${DATETIME}] fetch public ip fail, please check your network environment"
+    exit 1;
+fi
 
 CURRENT_IP=$(cat /tmp/current_ip 2>/dev/null)
 
