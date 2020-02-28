@@ -8,6 +8,9 @@
 $ docker run -d -e CLOUDFLARE_TOKEN="<cloudflare-token>" -e CLOUDFLARE_ZONE_ID="<cloudflare-zone-id>" -e CLOUDFLARE_DOMAIN_NAME=<your.domain> awei/cloudflare-ddns
 ```
 
+[How to get Cloudflare Zone ID and Token](https://github.com/chenwei791129/docker-cloudflare-ddns/wiki/How-to-get-Cloudflare-Zone-ID-and-Token%3F)
+
+
 ### Necessary Environment Variables
 * `CLOUDFLARE_TOKEN` your cloudflare token (string)
 * `CLOUDFLARE_ZONE_ID` your cloudflare zone id (string)
