@@ -16,7 +16,7 @@ $ docker run -d -e CLOUDFLARE_TOKEN=<godaddy-api-key> -e CLOUDFLARE_ZONE_ID=<god
 ### Option Environment Variables
 * `CLOUDFLARE_PROXIED` CF proxied function (boolean, default: false)
 * `TTL` TTL (integer,default: 1)
-* `CHECK_URL` a url can return your ip (string,default: "http://whatismyip.akamai.com/") also can use http://ipv4.icanhazip.com、http://api.ipify.org ...
+* `CHECK_URL` a url can return your ip (string,default: "http://whatismyip.akamai.com/") also can use http://ipv4.icanhazip.com 、 http://api.ipify.org ...
 * `CRON_TIME` crontab job time (default: "*/5 * * * *")
 
 ## License
