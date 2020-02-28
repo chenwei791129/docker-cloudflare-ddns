@@ -5,7 +5,7 @@
 [View on Docker Hub](https://hub.docker.com/r/awei/cloudflare-ddns)
 
 ```shell
-$ docker run -d -e CLOUDFLARE_TOKEN=<godaddy-api-key> -e CLOUDFLARE_ZONE_ID=<godaddy-api-secret> -e CLOUDFLARE_DOMAIN_NAME=<your.domain> awei/cloudflare-ddns
+$ docker run -d -e CLOUDFLARE_TOKEN="<cloudflare-token>" -e CLOUDFLARE_ZONE_ID="<cloudflare-zone-id>" -e CLOUDFLARE_DOMAIN_NAME=<your.domain> awei/cloudflare-ddns
 ```
 
 ### Necessary Environment Variables
