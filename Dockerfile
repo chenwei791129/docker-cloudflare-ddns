@@ -13,6 +13,6 @@ WORKDIR /scripts
 COPY cloudflare-ddns.sh /scripts
 
 RUN apk add --update bash curl jq && \
-    chmod +x /scripts/cloudflare-ddns.sh && \
+    chmod +x /scripts/cloudflare-ddns.sh
 
 CMD echo "${CRON_TIME} /scripts/cloudflare-ddns.sh" >> /etc/crontabs/root && crond -f -L 2
