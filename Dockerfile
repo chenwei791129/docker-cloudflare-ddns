@@ -14,6 +14,5 @@ COPY cloudflare-ddns.sh /scripts
 
 RUN apk add --update bash curl jq && \
     chmod +x /scripts/cloudflare-ddns.sh && \
-    echo "${CRON_TIME} /scripts/cloudflare-ddns.sh" >> /etc/crontabs/root
 
-CMD crond -f -L 2
+CMD echo "${CRON_TIME} /scripts/cloudflare-ddns.sh" >> /etc/crontabs/root && crond -f -L 2
