@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.16.2
 
 ENV CLOUDFLARE_TOKEN="" \
     CLOUDFLARE_ZONE_ID="" \
