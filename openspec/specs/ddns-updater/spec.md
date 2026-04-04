@@ -44,6 +44,8 @@ code:
 
 The system SHALL store the last known public IP address in an in-memory variable. On each check cycle, the system SHALL compare the newly retrieved IP against the cached IP. If the IPs match, the system SHALL log that no update is required and skip the Cloudflare API call.
 
+On the first check cycle, the system SHALL initialize the in-memory IP cache from the DNS record query response (the `content` field of the A record returned by Cloudflare API). This initialization SHALL occur as part of the existing record ID query — no additional API call SHALL be made.
+
 #### Scenario: IP unchanged
 
 - **WHEN** the retrieved IP matches the cached IP
@@ -51,28 +53,26 @@ The system SHALL store the last known public IP address in an in-memory variable
 
 #### Scenario: IP changed
 
-- **WHEN** the retrieved IP differs from the cached IP (or cache is empty on first run)
+- **WHEN** the retrieved IP differs from the cached IP
 - **THEN** the system SHALL proceed to update the Cloudflare DNS record
 
-#### Scenario: First run with empty cache
+#### Scenario: First run — IP matches DNS record
 
 - **WHEN** the system starts for the first time and the cache is empty
-- **THEN** the system SHALL treat the retrieved IP as changed and proceed to update
+- **AND** the public IP matches the IP stored in the Cloudflare DNS A record
+- **THEN** the system SHALL log "no update required" and skip the Cloudflare update API call
+
+#### Scenario: First run — IP differs from DNS record
+
+- **WHEN** the system starts for the first time and the cache is empty
+- **AND** the public IP differs from the IP stored in the Cloudflare DNS A record
+- **THEN** the system SHALL proceed to update the Cloudflare DNS record
 
 
 <!-- @trace
-source: golang-rewrite
+source: skip-redundant-update
 updated: 2026-04-04
 code:
-  - .github/workflows/release-please.yml
-  - go.mod
-  - Dockerfile
-  - cloudflare-ddns.sh
-  - Makefile
-  - .spectra.yaml
-  - .github/workflows/build-image.yml
-  - version.txt
-  - README.md
   - main.go
 -->
 
@@ -81,10 +81,10 @@ code:
 
 The system SHALL update the A record for the domain specified in `CLOUDFLARE_DOMAIN_NAME` via the Cloudflare API v4. The update process SHALL:
 
-1. Query `GET /zones/{zone_id}/dns_records?name={domain}&type=A` to find the record ID of the A record matching `CLOUDFLARE_DOMAIN_NAME`
+1. Query `GET /zones/{zone_id}/dns_records?name={domain}&type=A` to find the record ID and current IP (`content` field) of the A record matching `CLOUDFLARE_DOMAIN_NAME`
 2. Update the record via `PUT /zones/{zone_id}/dns_records/{record_id}` with the new IP, TTL, and proxied settings
 
-The record ID query result SHALL be cached in memory after the first successful lookup. Subsequent update cycles SHALL reuse the cached record ID without re-querying the API.
+The record ID query result SHALL be cached in memory after the first successful lookup. The `content` field from the query response SHALL be used to initialize the in-memory IP cache on the first check cycle. Subsequent update cycles SHALL reuse the cached record ID without re-querying the API.
 
 Authentication SHALL use Bearer token from `CLOUDFLARE_TOKEN`. All Cloudflare API requests SHALL use a dedicated HTTP client with a timeout of 30 seconds. The JSON request body for the PUT request SHALL be constructed using structured serialization (not string formatting). On successful update, the system SHALL update the in-memory cache with the new IP.
 
@@ -116,15 +116,14 @@ Authentication SHALL use Bearer token from `CLOUDFLARE_TOKEN`. All Cloudflare AP
 #### Scenario: First update cycle record ID query
 
 - **WHEN** the system performs its first update cycle and no cached record ID exists
-- **THEN** the system SHALL query the Cloudflare API with name and type filters to retrieve the record ID
+- **THEN** the system SHALL query the Cloudflare API with name and type filters to retrieve the record ID and current IP content
 
 
 <!-- @trace
-source: fix-http-tech-debt
+source: skip-redundant-update
 updated: 2026-04-04
 code:
   - main.go
-  - tech-debt.md
 -->
 
 ---
