@@ -1,0 +1,15 @@
+services:
+  cloudflare-ddns:
+    image: ghcr.io/chenwei791129/cloudflare-ddns:2
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    environment:
+      # Required
+      - CF_TOKEN=your_cloudflare_api_token
+      - CF_ZONE_ID=your_zone_id
+      - CF_DOMAIN_NAME=example.com
+      # Optional
+      # - CF_PROXIED=true
+      # - TTL=1
+      # - CHECK_URL=https://api.ipify.org
+      # - CHECK_INTERVAL=5m
