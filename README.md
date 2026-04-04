@@ -7,25 +7,25 @@
 
 ```shell
 # Pull from GHCR (recommended)
-$ docker run -d -e CLOUDFLARE_TOKEN="<cloudflare-token>" -e CLOUDFLARE_ZONE_ID="<cloudflare-zone-id>" -e CLOUDFLARE_DOMAIN_NAME=<your.domain> ghcr.io/chenwei791129/cloudflare-ddns
+$ docker run -d -e CF_TOKEN="<cloudflare-token>" -e CF_ZONE_ID="<cloudflare-zone-id>" -e CF_DOMAIN_NAME=<your.domain> ghcr.io/chenwei791129/cloudflare-ddns
 
 # Pull from Docker Hub
-$ docker run -d -e CLOUDFLARE_TOKEN="<cloudflare-token>" -e CLOUDFLARE_ZONE_ID="<cloudflare-zone-id>" -e CLOUDFLARE_DOMAIN_NAME=<your.domain> awei/cloudflare-ddns
+$ docker run -d -e CF_TOKEN="<cloudflare-token>" -e CF_ZONE_ID="<cloudflare-zone-id>" -e CF_DOMAIN_NAME=<your.domain> awei/cloudflare-ddns
 ```
 
 [How to get Cloudflare Zone ID and Token](https://github.com/chenwei791129/docker-cloudflare-ddns/wiki/How-to-get-Cloudflare-Zone-ID-and-Token%3F)
 
 
 ### Necessary Environment Variables
-* `CLOUDFLARE_TOKEN` your cloudflare token (string)
-* `CLOUDFLARE_ZONE_ID` your cloudflare zone id (string)
-* `CLOUDFLARE_DOMAIN_NAME` your domain full name (string)
+* `CF_TOKEN` your cloudflare token (string)
+* `CF_ZONE_ID` your cloudflare zone id (string)
+* `CF_DOMAIN_NAME` your domain full name, e.g. `blog.example.com` or `*.example.com` (string)
 
 ### Option Environment Variables
-* `CLOUDFLARE_PROXIED` CF proxied function (boolean, default: false)
-* `TTL` TTL (integer,default: 1)
-* `CHECK_URL` a url can return your ip (string,default: "http://whatismyip.akamai.com/") also can use http://ipv4.icanhazip.com 、 http://api.ipify.org ...
-* `CRON_TIME` crontab job time (default: "*/5 * * * *")
+* `CF_PROXIED` CF proxied function (boolean, default: false)
+* `TTL` TTL (integer, default: 1)
+* `CHECK_URL` a url can return your ip (string, default: "http://whatismyip.akamai.com/") also can use http://ipv4.icanhazip.com, http://api.ipify.org ...
+* `CHECK_INTERVAL` interval between IP checks using Go duration format, e.g. `30s`, `5m`, `1h` (string, default: "5m")
 
 ## License
 The repository is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
