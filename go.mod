@@ -1,6 +1,6 @@
 module github.com/chenwei791129/docker-cloudflare-ddns
 
-go 1.25.4
+go 1.26.1
 
 tool github.com/golangci/golangci-lint/cmd/golangci-lint
 
