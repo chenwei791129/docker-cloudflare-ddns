@@ -1,19 +1,15 @@
-ARG BASE_IMAGE=alpine
-FROM ${BASE_IMAGE}:3.18.2
+FROM golang:1.26-alpine AS builder
 
-ENV CLOUDFLARE_TOKEN="" \
-    CLOUDFLARE_ZONE_ID="" \
-    CLOUDFLARE_DOMAIN_NAME="" \
-    CLOUDFLARE_PROXIED=false \
-    TTL=1 \
-    CHECK_URL="http://whatismyip.akamai.com/" \
-    CRON_TIME="*/5 * * * *"
+WORKDIR /build
 
-WORKDIR /scripts
+COPY go.mod ./
+COPY main.go ./
 
-COPY cloudflare-ddns.sh /scripts
+RUN CGO_ENABLED=0 GOOS=linux go build -o cloudflare-ddns .
 
-RUN apk add --update bash curl jq && \
-    chmod +x /scripts/cloudflare-ddns.sh
+FROM scratch
 
-CMD echo "${CRON_TIME} /scripts/cloudflare-ddns.sh" >> /etc/crontabs/root && crond -f -L 2
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /build/cloudflare-ddns /cloudflare-ddns
+
+ENTRYPOINT ["/cloudflare-ddns"]
