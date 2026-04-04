@@ -85,6 +85,23 @@ code:
   - .github/workflows/release-please.yml
 -->
 
+
+<!-- @trace
+source: golang-rewrite
+updated: 2026-04-04
+code:
+  - .github/workflows/release-please.yml
+  - go.mod
+  - Dockerfile
+  - cloudflare-ddns.sh
+  - Makefile
+  - .spectra.yaml
+  - .github/workflows/build-image.yml
+  - version.txt
+  - README.md
+  - main.go
+-->
+
 ### Requirement: Build workflow as reusable workflow
 
 The build workflow `.github/workflows/build-image.yml` SHALL support `workflow_call` trigger with a `version` input parameter. It SHALL NOT trigger on direct push to `master`.
@@ -117,7 +134,6 @@ The build workflow SHALL use the following action versions: `actions/checkout@v4
 - **THEN** all referenced GitHub Actions SHALL use the versions specified above
 
 ## Requirements
-
 
 <!-- @trace
 source: release-please-and-ghcr
@@ -169,12 +185,18 @@ The system SHALL generate image tags from the release version using `docker/meta
 - `1.2` (minor level)
 - `1` (major level)
 - `latest` (default branch only)
-- `alpine` (default branch only)
+
+The `alpine` tag SHALL NOT be produced, as the image is no longer based on Alpine Linux.
 
 #### Scenario: Semver tags generated from release version
 
 - **WHEN** the build workflow receives version `v1.2.3`
-- **THEN** `docker/metadata-action` SHALL produce tags `1.2.3`, `1.2`, `1`, `latest`, and `alpine`
+- **THEN** `docker/metadata-action` SHALL produce tags `1.2.3`, `1.2`, `1`, and `latest`
+
+#### Scenario: Alpine tag removed
+
+- **WHEN** image tags are generated
+- **THEN** the tag list SHALL NOT include an `alpine` tag
 
 #### Scenario: Tags applied to both registries
 

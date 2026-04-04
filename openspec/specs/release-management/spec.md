@@ -25,6 +25,23 @@ code:
   - .github/workflows/release-please.yml
 -->
 
+
+<!-- @trace
+source: golang-rewrite
+updated: 2026-04-04
+code:
+  - .github/workflows/release-please.yml
+  - go.mod
+  - Dockerfile
+  - cloudflare-ddns.sh
+  - Makefile
+  - .spectra.yaml
+  - .github/workflows/build-image.yml
+  - version.txt
+  - README.md
+  - main.go
+-->
+
 ### Requirement: Release-please workflow file
 
 The system SHALL have a dedicated workflow file `.github/workflows/release-please.yml` that runs on push to `master` with `contents: write` and `pull-requests: write` permissions.
@@ -63,7 +80,6 @@ The system SHALL maintain a `version.txt` file in the repository root containing
 
 ## Requirements
 
-
 <!-- @trace
 source: release-please-and-ghcr
 updated: 2026-04-04
@@ -78,7 +94,7 @@ code:
 
 ### Requirement: Automated version management via release-please
 
-The system SHALL use `googleapis/release-please-action@v4` with `release-type: simple` to manage versions automatically. A `version.txt` file in the repository root SHALL serve as the version source of truth.
+The system SHALL use `googleapis/release-please-action@v4` with `release-type: go` to manage versions automatically. A `version.txt` file in the repository root SHALL serve as the version source of truth.
 
 #### Scenario: Release PR creation on push to master
 
