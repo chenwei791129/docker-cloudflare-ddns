@@ -1,10 +1,15 @@
 # docker-cloudflare-ddns
 ## How to use
-[![This image on DockerHub](https://img.shields.io/docker/pulls/awei/cloudflare-ddns.svg)](https://hub.docker.com/r/awei/cloudflare-ddns/)
+[![GHCR](https://img.shields.io/badge/ghcr.io-chenwei791129%2Fcloudflare--ddns-blue)](https://ghcr.io/chenwei791129/cloudflare-ddns)
+[![Docker Hub](https://img.shields.io/docker/pulls/awei/cloudflare-ddns.svg)](https://hub.docker.com/r/awei/cloudflare-ddns/)
 
-[View on Docker Hub](https://hub.docker.com/r/awei/cloudflare-ddns)
+[View on GHCR](https://ghcr.io/chenwei791129/cloudflare-ddns) | [View on Docker Hub](https://hub.docker.com/r/awei/cloudflare-ddns)
 
 ```shell
+# Pull from GHCR (recommended)
+$ docker run -d -e CLOUDFLARE_TOKEN="<cloudflare-token>" -e CLOUDFLARE_ZONE_ID="<cloudflare-zone-id>" -e CLOUDFLARE_DOMAIN_NAME=<your.domain> ghcr.io/chenwei791129/cloudflare-ddns
+
+# Pull from Docker Hub
 $ docker run -d -e CLOUDFLARE_TOKEN="<cloudflare-token>" -e CLOUDFLARE_ZONE_ID="<cloudflare-zone-id>" -e CLOUDFLARE_DOMAIN_NAME=<your.domain> awei/cloudflare-ddns
 ```
 
