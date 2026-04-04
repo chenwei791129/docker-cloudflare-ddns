@@ -22,10 +22,15 @@ type config struct {
 	CheckInterval time.Duration
 }
 
-type cloudflareResponse struct {
+type cloudflareError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type cloudflareResponse[T any] struct {
 	Success bool              `json:"success"`
-	Errors  []json.RawMessage `json:"errors"`
-	Result  json.RawMessage   `json:"result"`
+	Errors  []cloudflareError `json:"errors"`
+	Result  T                 `json:"result"`
 }
 
 type dnsRecord struct {
@@ -116,6 +121,17 @@ func getPublicIP(checkURL string) (string, error) {
 	return ip, nil
 }
 
+func formatCFErrors(errs []cloudflareError) string {
+	if len(errs) == 0 {
+		return "(no error details)"
+	}
+	msgs := make([]string, len(errs))
+	for i, e := range errs {
+		msgs[i] = fmt.Sprintf("code %d: %s", e.Code, e.Message)
+	}
+	return strings.Join(msgs, "; ")
+}
+
 func getRecordID(cfg config) (string, error) {
 	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records", cfg.ZoneID)
 
@@ -132,22 +148,16 @@ func getRecordID(cfg config) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	var cfResp cloudflareResponse
+	var cfResp cloudflareResponse[[]dnsRecord]
 	if err := json.NewDecoder(resp.Body).Decode(&cfResp); err != nil {
 		return "", fmt.Errorf("failed to decode API response: %w", err)
 	}
 
 	if !cfResp.Success {
-		errJSON, _ := json.Marshal(cfResp.Errors)
-		return "", fmt.Errorf("API query failed, errors: %s", errJSON)
+		return "", fmt.Errorf("API query failed, errors: %s", formatCFErrors(cfResp.Errors))
 	}
 
-	var records []dnsRecord
-	if err := json.Unmarshal(cfResp.Result, &records); err != nil {
-		return "", fmt.Errorf("failed to parse DNS records: %w", err)
-	}
-
-	for _, r := range records {
+	for _, r := range cfResp.Result {
 		if r.Name == cfg.DomainName && r.Type == "A" {
 			return r.ID, nil
 		}
@@ -175,14 +185,13 @@ func updateRecord(cfg config, recordID, ip string) error {
 	}
 	defer resp.Body.Close()
 
-	var cfResp cloudflareResponse
+	var cfResp cloudflareResponse[dnsRecord]
 	if err := json.NewDecoder(resp.Body).Decode(&cfResp); err != nil {
 		return fmt.Errorf("failed to decode update response: %w", err)
 	}
 
 	if !cfResp.Success {
-		errJSON, _ := json.Marshal(cfResp.Errors)
-		return fmt.Errorf("update failed, errors: %s", errJSON)
+		return fmt.Errorf("update failed, errors: %s", formatCFErrors(cfResp.Errors))
 	}
 
 	return nil
