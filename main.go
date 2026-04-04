@@ -40,9 +40,10 @@ type cloudflareResponse[T any] struct {
 }
 
 type dnsRecord struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
-	Name string `json:"name"`
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Content string `json:"content"`
 }
 
 type ddnsState struct {
@@ -163,34 +164,34 @@ func newCFRequest(token, method, reqURL string, body io.Reader) (*http.Request, 
 	return req, nil
 }
 
-func getRecordID(cfg config) (string, error) {
+func getRecord(cfg config) (dnsRecord, error) {
 	reqURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records?name=%s&type=A", cfg.ZoneID, url.QueryEscape(cfg.DomainName))
 
 	req, err := newCFRequest(cfg.Token, "GET", reqURL, nil)
 	if err != nil {
-		return "", err
+		return dnsRecord{}, err
 	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to query DNS records: %w", err)
+		return dnsRecord{}, fmt.Errorf("failed to query DNS records: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var cfResp cloudflareResponse[[]dnsRecord]
 	if err := json.NewDecoder(resp.Body).Decode(&cfResp); err != nil {
-		return "", fmt.Errorf("failed to decode API response: %w", err)
+		return dnsRecord{}, fmt.Errorf("failed to decode API response: %w", err)
 	}
 
 	if !cfResp.Success {
-		return "", fmt.Errorf("API query failed, errors: %s", formatCFErrors(cfResp.Errors))
+		return dnsRecord{}, fmt.Errorf("API query failed, errors: %s", formatCFErrors(cfResp.Errors))
 	}
 
 	if len(cfResp.Result) == 0 {
-		return "", fmt.Errorf("no A record found for %s", cfg.DomainName)
+		return dnsRecord{}, fmt.Errorf("no A record found for %s", cfg.DomainName)
 	}
 
-	return cfResp.Result[0].ID, nil
+	return cfResp.Result[0], nil
 }
 
 func updateRecord(cfg config, recordID, ip string) error {
@@ -247,10 +248,17 @@ func runUpdate(cfg config, state *ddnsState) {
 	}
 
 	if state.recordID == "" {
-		var err error
-		state.recordID, err = getRecordID(cfg)
+		rec, err := getRecord(cfg)
 		if err != nil {
-			logf("query record ID failed: %v", err)
+			logf("query record failed: %v", err)
+			return
+		}
+		state.recordID = rec.ID
+		if rec.Content != "" {
+			state.ip = rec.Content
+		}
+		if state.ip == ip {
+			logf("Current public IP matches DNS record. No update required! IP: %s", ip)
 			return
 		}
 	}
