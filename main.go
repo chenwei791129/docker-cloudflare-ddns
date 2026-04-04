@@ -1,16 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
 
 type config struct {
 	Token         string
@@ -37,6 +43,19 @@ type dnsRecord struct {
 	ID   string `json:"id"`
 	Type string `json:"type"`
 	Name string `json:"name"`
+}
+
+type ddnsState struct {
+	ip       string
+	recordID string
+}
+
+type dnsUpdatePayload struct {
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Content string `json:"content"`
+	TTL     int    `json:"ttl"`
+	Proxied bool   `json:"proxied"`
 }
 
 func logf(format string, args ...any) {
@@ -102,7 +121,7 @@ func loadConfig() (config, error) {
 }
 
 func getPublicIP(checkURL string) (string, error) {
-	resp, err := http.Get(checkURL)
+	resp, err := httpClient.Get(checkURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch public IP: %w", err)
 	}
@@ -132,17 +151,27 @@ func formatCFErrors(errs []cloudflareError) string {
 	return strings.Join(msgs, "; ")
 }
 
-func getRecordID(cfg config) (string, error) {
-	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records", cfg.ZoneID)
+func newCFRequest(token, method, reqURL string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, reqURL, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	return req, nil
+}
 
-	req, err := http.NewRequest("GET", url, nil)
+func getRecordID(cfg config) (string, error) {
+	reqURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records?name=%s&type=A", cfg.ZoneID, url.QueryEscape(cfg.DomainName))
+
+	req, err := newCFRequest(cfg.Token, "GET", reqURL, nil)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", "Bearer "+cfg.Token)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to query DNS records: %w", err)
 	}
@@ -157,29 +186,34 @@ func getRecordID(cfg config) (string, error) {
 		return "", fmt.Errorf("API query failed, errors: %s", formatCFErrors(cfResp.Errors))
 	}
 
-	for _, r := range cfResp.Result {
-		if r.Name == cfg.DomainName && r.Type == "A" {
-			return r.ID, nil
-		}
+	if len(cfResp.Result) == 0 {
+		return "", fmt.Errorf("no A record found for %s", cfg.DomainName)
 	}
 
-	return "", fmt.Errorf("no A record found for %s", cfg.DomainName)
+	return cfResp.Result[0].ID, nil
 }
 
 func updateRecord(cfg config, recordID, ip string) error {
-	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records/%s", cfg.ZoneID, recordID)
+	reqURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/dns_records/%s", cfg.ZoneID, recordID)
 
-	payload := fmt.Sprintf(`{"type":"A","name":"%s","content":"%s","ttl":%d,"proxied":%t}`,
-		cfg.DomainName, ip, cfg.TTL, cfg.Proxied)
+	payload := dnsUpdatePayload{
+		Type:    "A",
+		Name:    cfg.DomainName,
+		Content: ip,
+		TTL:     cfg.TTL,
+		Proxied: cfg.Proxied,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal update payload: %w", err)
+	}
 
-	req, err := http.NewRequest("PUT", url, strings.NewReader(payload))
+	req, err := newCFRequest(cfg.Token, "PUT", reqURL, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+cfg.Token)
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to update DNS record: %w", err)
 	}
@@ -197,7 +231,7 @@ func updateRecord(cfg config, recordID, ip string) error {
 	return nil
 }
 
-func runUpdate(cfg config, cachedIP *string) {
+func runUpdate(cfg config, state *ddnsState) {
 	logf("Checking current public IP from %s...", cfg.CheckURL)
 
 	ip, err := getPublicIP(cfg.CheckURL)
@@ -207,24 +241,27 @@ func runUpdate(cfg config, cachedIP *string) {
 	}
 	logf("public IP: %s", ip)
 
-	if *cachedIP == ip {
+	if state.ip == ip {
 		logf("Current public IP matches cached IP. No update required! IP: %s", ip)
 		return
 	}
 
-	recordID, err := getRecordID(cfg)
-	if err != nil {
-		logf("query record ID failed: %v", err)
-		return
+	if state.recordID == "" {
+		var err error
+		state.recordID, err = getRecordID(cfg)
+		if err != nil {
+			logf("query record ID failed: %v", err)
+			return
+		}
 	}
 
 	logf("Updating new IP: %s", ip)
-	if err := updateRecord(cfg, recordID, ip); err != nil {
+	if err := updateRecord(cfg, state.recordID, ip); err != nil {
 		logf("update record failed: %v", err)
 		return
 	}
 
-	*cachedIP = ip
+	state.ip = ip
 	logf("Update record successfully, new IP: %s", ip)
 }
 
@@ -237,15 +274,15 @@ func main() {
 
 	logf("Starting cloudflare-ddns (interval: %s)", cfg.CheckInterval)
 
-	var cachedIP string
+	var state ddnsState
 
 	// Run immediately on startup
-	runUpdate(cfg, &cachedIP)
+	runUpdate(cfg, &state)
 
 	ticker := time.NewTicker(cfg.CheckInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		runUpdate(cfg, &cachedIP)
+		runUpdate(cfg, &state)
 	}
 }
