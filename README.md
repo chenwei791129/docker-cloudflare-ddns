@@ -24,7 +24,7 @@ $ docker run -d -e CF_TOKEN="<cloudflare-token>" -e CF_ZONE_ID="<cloudflare-zone
 ### Option Environment Variables
 * `CF_PROXIED` CF proxied function (boolean, default: false)
 * `TTL` TTL (integer, default: 1)
-* `CHECK_URL` a url can return your ip (string, default: "http://whatismyip.akamai.com/") also can use http://ipv4.icanhazip.com, http://api.ipify.org ...
+* `CHECK_URL` a url can return your ip (string, default: "http://whatismyip.akamai.com/") also can use http://ipv4.icanhazip.com, http://api.ipify.org, https://checkip.amazonaws.com/ ...
 * `CHECK_INTERVAL` interval between IP checks using Go duration format, e.g. `30s`, `5m`, `1h` (string, default: "5m")
 
 ## License
