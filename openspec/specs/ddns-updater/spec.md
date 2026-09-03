@@ -242,7 +242,7 @@ code:
 ---
 ### Requirement: Static binary in scratch Docker image
 
-The system SHALL be compiled as a statically-linked Go binary (`CGO_ENABLED=0`). The Dockerfile SHALL use a multi-stage build: `golang:1.26-alpine` as the builder stage and `scratch` as the runtime stage. The runtime image SHALL include only the compiled binary and CA certificates (`/etc/ssl/certs/ca-certificates.crt` copied from the builder stage).
+The system SHALL be compiled as a statically-linked Go binary (`CGO_ENABLED=0`). The Dockerfile SHALL use a multi-stage build: `golang:1.27-alpine` as the builder stage and `scratch` as the runtime stage. The runtime image SHALL include only the compiled binary and CA certificates (`/etc/ssl/certs/ca-certificates.crt` copied from the builder stage).
 
 #### Scenario: Minimal runtime image
 
